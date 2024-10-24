@@ -1,0 +1,29 @@
+
+
+### getting list of all players in player_details table from database 
+GET http://localhost:3000/players  
+
+
+### getting details of specific player by ID 
+GET http://localhost:3000/players/3
+
+
+### updating details of specific player by ID
+PUT http://localhost:3000/players/3 
+Content-Type: application/json
+
+{
+ "playerName": "Raju"
+}
+
+
+### list all matches   -- extra  
+GET http://localhost:3000/matches
+
+
+### specific match details  
+GET http://localhost:3000/matches/3
+
+
+### list of all matches of a player 
+GET http://localhost:3000/players/3/matches
