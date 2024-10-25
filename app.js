@@ -18,7 +18,6 @@ initializeDBAndServer = async () => {
   try {
     db = await open({
       filename: dbPath,
-
       driver: sqlite3.Database,
     })
 
@@ -35,7 +34,6 @@ initializeDBAndServer()
 convertPlayerDetailsToResObj = dbObj => {
   return {
     playerId: dbObj.player_id,
-
     playerName: dbObj.player_name,
   }
 }
@@ -44,16 +42,12 @@ convertPlayerDetailsToResObj = dbObj => {
 
 app.get('/players', async (request, response) => {
   const getPlayersQuery = `
-
     SELECT *
-
     FROM player_details
-
     `
 
   try {
     const playersArray = await db.all(getPlayersQuery)
-
     const resObjArray = playersArray.map(dbObj =>
       convertPlayerDetailsToResObj(dbObj),
     )
@@ -68,23 +62,17 @@ app.get('/players', async (request, response) => {
 
 app.get('/players/:playerId', async (request, response) => {
   const {playerId} = request.params
-
   const getPlayerQuery = `
 
   SELECT *  
-
   FROM player_details
-
   WHERE player_id = ${playerId}
-
   `
 
   try {
     const player = await db.get(getPlayerQuery)
-
     const resObj = convertPlayerDetailsToResObj(player)
-
-    response.send(player)
+    response.send(resObj)
   } catch (e) {
     console.log(`Getting spcecific player Error : ${e.message}`)
   }
@@ -94,24 +82,18 @@ app.get('/players/:playerId', async (request, response) => {
 
 app.put('/players/:playerId', async (request, response) => {
   const {playerId} = request.params
-
   const {playerName} = request.body
-
   const updatePlayerQuery = `
 
   UPDATE player_details
-
   SET
-
   player_name = '${playerName}'
-
   WHERE player_id = ${playerId}
 
   `
 
   try {
     await db.run(updatePlayerQuery)
-
     response.send('Player Details Updated')
   } catch (e) {
     console.log(`Updating Players Details Error : ${e.message}`)
@@ -121,9 +103,7 @@ app.put('/players/:playerId', async (request, response) => {
 convertMatchDetailsToResObj = dbObj => {
   return {
     matchId: dbObj.match_id,
-
     match: dbObj.match,
-
     year: dbObj.year,
   }
 }
@@ -134,9 +114,7 @@ app.get('/matches', async (request, response) => {
   const getMatcheQuery = `
 
   SELECT *
-
   FROM match_details
-
   `
 
   try {
@@ -156,21 +134,16 @@ app.get('/matches', async (request, response) => {
 
 app.get('/matches/:matchId', async (request, response) => {
   const {matchId} = request.params
-
   const getMatchQuery = `
 
   SELECT *
-
   FROM match_details
-
   WHERE match_id = ${matchId}
   `
 
   try {
     const match = await db.get(getMatchQuery)
-
     const resObj = convertMatchDetailsToResObj(match)
-
     response.send(resObj)
   } catch (e) {
     console.log(`Match details Error : ${e.message}`)
@@ -197,3 +170,36 @@ app.get('/players/:playerId/matches', async (request, response) => {
     console.log(`List of matches of a player Error : ${e.message}`)
   }
 })
+
+// API to return list of players of specific match
+app.get('/matches/:matchId/players', async (request, response) => {
+  const {matchId} = request.params
+
+  const getPlayersOfAMatch = `
+  SELECT player_id, player_name
+  FROM player_details
+  NATURAL JOIN player_match_score
+  WHERE match_id = ${matchId}
+  `
+  const playerOfAMatch = await db.all(getPlayersOfAMatch)
+  const resObj = playerOfAMatch.map(dbObj =>
+    convertPlayerDetailsToResObj(dbObj),
+  )
+  response.send(resObj)
+})
+
+// API to get total score, sixes and fours of a specific player by ID
+app.get('/players/:playerId/playerScores', async (request, response) => {
+  const {playerId} = request.params
+
+  const getTotalScoreSixesFouresQuery = `
+  SELECT player_id AS playerId, player_name AS playerName, sum(score) AS totalScore , sum(fours) AS totalFours, sum(sixes) AS totalSixes
+  FROM player_details
+  NATURAL JOIN player_match_score 
+  WHERE player_id = ${playerId}
+  `
+  const dbArray = await db.get(getTotalScoreSixesFouresQuery)
+  response.send(dbArray)
+})
+
+module.exports = app
